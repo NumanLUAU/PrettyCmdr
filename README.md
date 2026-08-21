@@ -1,7 +1,7 @@
 <div align="center">
 <img src="assets/logo.png" alt="Cmdr" width="250">
 
-# Cmdr
+# PrettyCmdr
 
 [![Discord](https://img.shields.io/discord/1497725941974040731.svg?label=Discord&logo=discord&color=5865F2)](https://discord.gg/xFzPVg5WXm)
 [![Documentation](https://img.shields.io/badge/docs-view%20documentation-9B59B6)](https://eryn.io/Cmdr/)
@@ -13,6 +13,33 @@ Build powerful in-game command systems, developer tools, and admin workflows wit
 Originally built as a developer console for debugging and internal tools, Cmdr has evolved into a powerful command system that can be used for anything from gameplay interactions and moderation tools to custom player-facing interfaces.
 
 </div>
+
+## What's Changed in PrettyCmdr
+
+PrettyCmdr keeps the same powerful functionality and internal behavior as the original Cmdr, but gives the user interface a complete redesign focused on making the experience more pleasant and approachable.
+
+The UI now features:
+
+* **Redesigned interface**
+
+  * A clean, modern UI with a black, almost-translucent background.
+  * Positioned at the bottom of the screen for a more natural and unobtrusive experience.
+  * Rounded corners and a polished layout for a smoother overall appearance.
+
+* **Bubbly animations**
+
+  * Smooth tweens and subtle animations throughout the interface.
+  * Responsive visual feedback that makes interacting with commands feel more fluid.
+
+* **Same Cmdr functionality**
+
+  * PrettyCmdr functions internally just like normal Cmdr.
+  * Command execution, argument validation, autocomplete, custom types, and other core functionality remain unchanged.
+  * The primary difference is the UI, making Cmdr feel more welcoming to the average user without sacrificing its existing capabilities.
+
+### Showcase
+
+https://github.com/user-attachments/assets/b1dea012-10f1-4335-bbc4-e5c7ef26af6d
 
 ## Features
 
