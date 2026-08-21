@@ -1,8 +1,8 @@
 {
-  "name": "cmdr",
+  "name": "PrettyCmdr",
   "private": true,
   "version": "1.13.0-rc.3",
-  "description": "Extensible command console for Roblox developers",
+  "description": "Extensible command console for Roblox developers, now with a pretty interface",
   "license": "MIT",
   "scripts": {
     "predocs": "node scripts/sync-changelog.mjs",
