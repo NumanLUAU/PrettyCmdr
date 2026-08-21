@@ -1,15 +1,40 @@
+-- >> services
 const GuiService = game:GetService("GuiService")
 const Players = game:GetService("Players")
 const TextChatService = game:GetService("TextChatService")
+const TweenService = game:GetService("TweenService")
 const UserInputService = game:GetService("UserInputService")
 
+-- >> constants
 const WINDOW_MAX_HEIGHT = 300
+
+const WINDOW_OPEN_TWEEN = TweenInfo.new(
+	0.38,
+	Enum.EasingStyle.Back,
+	Enum.EasingDirection.Out
+)
+
+const WINDOW_RESIZE_TWEEN = TweenInfo.new(
+	0.28,
+	Enum.EasingStyle.Quint,
+	Enum.EasingDirection.Out
+)
+
+const WINDOW_CLOSE_TWEEN = TweenInfo.new(
+	0.2,
+	Enum.EasingStyle.Quint,
+	Enum.EasingDirection.In
+)
+
 const MOUSE_TOUCH_INPUTS =
 	{ Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.Touch }
 
-const VALID_TEXT_COLOR = Color3.fromRGB(255, 255, 255)
-const INVALID_TEXT_COLOR = Color3.fromRGB(255, 73, 73)
-const PROCESSING_TEXT_COLOR = Color3.fromRGB(255, 223, 93)
+const VALID_TEXT_COLOR = Color3.fromRGB(242, 245, 247)
+const INVALID_TEXT_COLOR = Color3.fromRGB(255, 92, 108)
+const PROCESSING_TEXT_COLOR = Color3.fromRGB(96, 255, 151)
+const WINDOW_MAX_HEIGHT = 300
+const MOUSE_TOUCH_INPUTS =
+	{ Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.Touch }
 
 const Player = Players.LocalPlayer
 
@@ -71,6 +96,8 @@ return function(CmdrClient, AutoComplete)
 
 		_pressCount = 0,
 		_lastPressTime = 0,
+
+		_animationId = 0,
 	}
 
 	--[=[
@@ -87,23 +114,51 @@ return function(CmdrClient, AutoComplete)
 	]=]
 	function Window:UpdateLabelText()
 		const placeName = CmdrClient._placeName
+
 		self._entry.TextLabel.Text = `{Player.Name}{if placeName and placeName ~= "" then `@{placeName}` else ""}$`
+		self._entry.TextLabel.TextColor3 = PROCESSING_TEXT_COLOR
 	end
 
 	--[=[
 		@within Window
 		Recalculate the window height
 	]=]
-	function Window:UpdateWindowHeight()
+	--// recalculates the window height and smoothly resizes the panel.
+	function Window:UpdateWindowHeight(animate: boolean?)
 		const layout = entryFrame.UIListLayout
 		const padding = entryFrame.UIPadding
-		const height = layout.AbsoluteContentSize.Y + padding.PaddingTop.Offset + padding.PaddingBottom.Offset
+
+		const height = layout.AbsoluteContentSize.Y
+			+ padding.PaddingTop.Offset
+			+ padding.PaddingBottom.Offset
 
 		const xSize = entryFrame.Size.X
 		const clampedHeight = math.clamp(height, 0, WINDOW_MAX_HEIGHT)
 
-		entryFrame.Size = UDim2.new(xSize.Scale, xSize.Offset, 0, clampedHeight)
-		entryFrame.CanvasPosition = Vector2.new(0, height)
+		const targetSize = UDim2.new(
+			xSize.Scale,
+			xSize.Offset,
+			0,
+			clampedHeight
+		)
+
+		if animate and entryFrame.Visible then
+			TweenService:Create(
+				entryFrame,
+				WINDOW_RESIZE_TWEEN,
+				{
+					Size = targetSize,
+				}
+			):Play()
+		else
+			entryFrame.Size = targetSize
+		end
+
+		entryFrame.CanvasPosition = Vector2.new(
+			0,
+			math.max(0, height)
+		)
+
 		AutoComplete:_updateContainerPosition()
 	end
 
@@ -143,7 +198,7 @@ return function(CmdrClient, AutoComplete)
 		end
 
 		if text == "" then
-			self:UpdateWindowHeight()
+			self:UpdateWindowHeight(true)
 			return
 		end
 
@@ -151,7 +206,18 @@ return function(CmdrClient, AutoComplete)
 		line.Text = CmdrClient.Util.EmulateTabstops(text, 8)
 		line.TextColor3 = options.Color or line.TextColor3
 		line.RichText = options.RichText or false
+		line.TextTransparency = 1
+		line.Position = UDim2.fromOffset(8, 0)
 		line.Parent = entryFrame
+
+		TweenService:Create(
+			line,
+			TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+			{
+				TextTransparency = 0,
+				Position = UDim2.fromOffset(0, 0),
+			}
+		):Play()
 	end
 
 	--[=[
@@ -212,26 +278,130 @@ return function(CmdrClient, AutoComplete)
 		@within Window
 		Sets whether the command bar is visible.
 	]=]
+	--// smoothly opens or closes the command window.
 	function Window:SetVisible(visible: boolean)
-		entryFrame.Visible = visible
+		self._animationId += 1
+
+		const animationId = self._animationId
 
 		if visible then
+			entryFrame.Visible = true
+
 			self:_setChatEnabled(false)
 			self:_setMouseUnlocked(true)
-
 			self:_setEntryText("")
-			self._entry.TextBox:CaptureFocus()
+
+			const targetHeight = math.clamp(
+				entryFrame.UIListLayout.AbsoluteContentSize.Y
+					+ entryFrame.UIPadding.PaddingTop.Offset
+					+ entryFrame.UIPadding.PaddingBottom.Offset,
+				0,
+				WINDOW_MAX_HEIGHT
+			)
+
+			const targetSize = UDim2.new(
+				entryFrame.Size.X.Scale,
+				entryFrame.Size.X.Offset,
+				0,
+				targetHeight
+			)
+
+			const stroke = entryFrame:FindFirstChildOfClass("UIStroke")
+
+			entryFrame.Size = UDim2.new(
+				targetSize.X.Scale,
+				targetSize.X.Offset,
+				0,
+				0
+			)
+
+			entryFrame.BackgroundTransparency = 1
+
+			if stroke then
+				stroke.Transparency = 1
+			end
+
+			TweenService:Create(
+				entryFrame,
+				WINDOW_OPEN_TWEEN,
+				{
+					Size = targetSize,
+					BackgroundTransparency = 0.06,
+				}
+			):Play()
+
+			if stroke then
+				TweenService:Create(
+					stroke,
+					TweenInfo.new(
+						0.28,
+						Enum.EasingStyle.Quad,
+						Enum.EasingDirection.Out
+					),
+					{
+						Transparency = 0.78,
+					}
+				):Play()
+			end
+
+			task.defer(function()
+				if animationId ~= self._animationId then
+					return
+				end
+
+				self._entry.TextBox:CaptureFocus()
+			end)
 		else
 			self:_setChatEnabled(true)
 			self:_setMouseUnlocked(false)
 
 			AutoComplete:Hide()
 			self._entry.TextBox:ReleaseFocus()
+
+			const stroke = entryFrame:FindFirstChildOfClass("UIStroke")
+
+			const tween = TweenService:Create(
+				entryFrame,
+				WINDOW_CLOSE_TWEEN,
+				{
+					Size = UDim2.new(
+						entryFrame.Size.X.Scale,
+						entryFrame.Size.X.Offset,
+						0,
+						0
+					),
+					BackgroundTransparency = 1,
+				}
+			)
+
+			tween:Play()
+
+			if stroke then
+				TweenService:Create(
+					stroke,
+					TweenInfo.new(
+						0.15,
+						Enum.EasingStyle.Quad,
+						Enum.EasingDirection.In
+					),
+					{
+						Transparency = 1,
+					}
+				):Play()
+			end
+
+			tween.Completed:Once(function()
+				if animationId ~= self._animationId then
+					return
+				end
+
+				entryFrame.Visible = false
+			end)
 		end
 
 		CmdrClient.Toggled:Fire(visible)
 	end
-
+	
 	--[=[
 		@within Window
 		Returns whether the command bar is currently visible.
@@ -695,7 +865,7 @@ return function(CmdrClient, AutoComplete)
 	end)
 
 	entryFrame.ChildAdded:Connect(function()
-		task.defer(Window.UpdateWindowHeight, Window)
+		task.defer(Window.UpdateWindowHeight, Window, true)
 	end)
 
 	Window._lineTemplate.Parent = script
